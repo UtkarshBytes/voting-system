@@ -1,15 +1,21 @@
 import Mailjet from 'node-mailjet';
 
 // Initialize Mailjet client
-// Use apiConnect directly if available on the default export, or fall back to Client.apiConnect if needed.
-// Based on test, apiConnect works directly on the required module.
+if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
+  console.warn("Mailjet API keys are missing. Email sending will fail.");
+}
+
 const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC || 'mock-public-key',
-  process.env.MJ_APIKEY_PRIVATE || 'mock-private-key'
+  process.env.MJ_APIKEY_PUBLIC || '',
+  process.env.MJ_APIKEY_PRIVATE || ''
 );
 
 export async function sendOtpEmail(to: string, otp: string, electionName: string, candidateName: string) {
   try {
+    if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
+        throw new Error("Mailjet API keys are not configured.");
+    }
+
     const request = mailjet
       .post("send", { 'version': 'v3.1' })
       .request({
@@ -46,13 +52,6 @@ export async function sendOtpEmail(to: string, otp: string, electionName: string
     return result.body;
   } catch (err: any) {
     console.error('Mailjet Error:', err.statusCode, err.message);
-    console.log('MOCK EMAIL SEND: To:', to, 'OTP:', otp);
-
-    // Only throw if keys are present (implying prod/test env that expects success)
-    if (process.env.MJ_APIKEY_PUBLIC && process.env.MJ_APIKEY_PRIVATE) {
-         // throw new Error("Failed to send email via Mailjet");
-         // For now, fail gracefully or rely on logs.
-    }
-    return { mock: true };
+    throw new Error(`Failed to send email: ${err.message}`);
   }
 }

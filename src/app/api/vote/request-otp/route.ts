@@ -165,7 +165,12 @@ export async function POST(req: NextRequest) {
     const candidate = election.candidates.find((c: any) => c.id === candidateId);
     const candidateName = candidate ? candidate.name : candidateId;
 
-    await sendOtpEmail(user.email, otp, election.title, candidateName);
+    try {
+        await sendOtpEmail(user.email, otp, election.title, candidateName);
+    } catch (emailError: any) {
+        console.error('Failed to send OTP email:', emailError);
+        return NextResponse.json({ error: 'Failed to send OTP email. Please try again later.' }, { status: 500 });
+    }
 
     return NextResponse.json({
       message: 'OTP sent successfully',
