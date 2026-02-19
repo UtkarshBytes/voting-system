@@ -41,18 +41,6 @@ export async function getSession(req: NextRequest) {
   return await verifyToken(token);
 }
 
-export function normalizeDescriptor(descriptor: number[]): number[] {
-  const magnitude = Math.sqrt(descriptor.reduce((sum, val) => sum + val * val, 0));
-  console.log(`Face descriptor magnitude: ${magnitude}`);
-
-  if (Math.abs(magnitude - 1.0) < 0.01) {
-    return descriptor;
-  }
-
-  if (magnitude === 0) return descriptor;
-  return descriptor.map(val => val / magnitude);
-}
-
 export function euclideanDistance(descriptor1: number[], descriptor2: number[]): number {
   if (descriptor1.length !== descriptor2.length) return Infinity;
   return Math.sqrt(

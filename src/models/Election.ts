@@ -1,15 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface ICandidate {
-  id: string; // Internal UUID
-  name: string;
-  party: string;
-  imageUrl?: string;
-}
-
 export interface IElection extends Document {
   title: string;
-  candidates: ICandidate[];
+  // candidates: Removed in favor of Candidate collection
   status: 'OPEN' | 'CLOSED' | 'ACTIVE';
   startTime: number;
   endTime?: number;
@@ -18,16 +11,9 @@ export interface IElection extends Document {
   createdBy?: mongoose.Types.ObjectId;
 }
 
-const CandidateSchema = new Schema<ICandidate>({
-  id: { type: String, required: true },
-  name: { type: String, required: true },
-  party: { type: String, required: true },
-  imageUrl: String
-}, { _id: false });
-
 const ElectionSchema = new Schema<IElection>({
   title: { type: String, required: true },
-  candidates: [CandidateSchema],
+  // candidates: Removed
   status: { type: String, enum: ['OPEN', 'CLOSED', 'ACTIVE'], default: 'ACTIVE' },
   startTime: { type: Number, required: true },
   endTime: Number,

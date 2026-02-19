@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import { blockchainService } from '@/lib/blockchain';
 import { Election } from '@/models/Election';
+import { Candidate } from '@/models/Candidate';
 import { User } from '@/models/User';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -24,13 +25,28 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Election not found' }, { status: 404 });
     }
 
+    // Fetch Candidates for this election
+    const candidates = await Candidate.find({ electionId: id }).populate('partyId', 'name');
+
+    // Map candidates to match expected frontend structure if needed, or update frontend
+    const candidatesData = candidates.map(c => ({
+        id: c._id.toString(),
+        name: c.name,
+        party: (c.partyId as any)?.name || 'Independent',
+        imageUrl: c.imageUrl
+    }));
+
     const results = await blockchainService.getVoteCounts(id);
     const totalVotes = await blockchainService.getTotalVotes(id);
     const lastBlock = await blockchainService.getLatestBlock();
     const totalVoters = await User.countDocuments({ role: 'USER' });
 
     return NextResponse.json({
-      election: { ...election.toObject(), id: election._id.toString() },
+      election: {
+          ...election.toObject(),
+          id: election._id.toString(),
+          candidates: candidatesData
+      },
       results,
       stats: {
         totalVotes,

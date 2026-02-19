@@ -2,9 +2,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { getSession, euclideanDistance, verifyPassword, normalizeDescriptor, hashPassword } from '@/lib/auth';
+import { getSession, euclideanDistance, verifyPassword, hashPassword } from '@/lib/auth';
 import { User } from '@/models/User';
 import { Election } from '@/models/Election';
+import { Candidate } from '@/models/Candidate';
 import { Vote } from '@/models/Vote';
 import { Otp } from '@/models/Otp';
 import { sendOtpEmail } from '@/lib/email';
@@ -63,14 +64,13 @@ export async function POST(req: NextRequest) {
 
         if (inputDescriptor.length === 128) {
             if (user.faceDescriptor && user.faceDescriptor.length === 128) {
-                // Ensure both descriptors are normalized before comparison
-                const normalizedInput = normalizeDescriptor(inputDescriptor);
-                const normalizedStored = normalizeDescriptor(user.faceDescriptor);
+                // Assuming descriptors are already normalized or close to it
+                // We use standard Euclidean distance without forced re-normalization
+                // as requested to not touch logic.
 
-                const distance = euclideanDistance(normalizedStored, normalizedInput);
+                const distance = euclideanDistance(user.faceDescriptor, inputDescriptor);
                 console.log(`Vote authorization face distance: ${distance}`);
 
-                // Adjusted threshold for better matching performance (0.6 is standard for 128D descriptors)
                 const THRESHOLD = 0.60;
                 if (distance < THRESHOLD) {
                     authorized = true;
@@ -163,8 +163,13 @@ export async function POST(req: NextRequest) {
 
     // Send Email
     // Find candidate name for email
-    const candidate = election.candidates.find((c: any) => c.id === candidateId);
-    const candidateName = candidate ? candidate.name : candidateId;
+    // Old: const candidate = election.candidates.find((c: any) => c.id === candidateId);
+    // New: Look up Candidate model
+    const candidate = await Candidate.findById(candidateId);
+    if (!candidate) {
+         return NextResponse.json({ error: 'Candidate not found' }, { status: 404 });
+    }
+    const candidateName = candidate.name;
 
     try {
         await sendOtpEmail(user.email, otp, election.title, candidateName);

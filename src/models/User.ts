@@ -1,12 +1,12 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { normalizeDescriptor } from '@/lib/auth';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   passwordHash: string;
   faceDescriptor?: number[];
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'PARTY_LEADER' | 'PARTY_MEMBER';
+  partyId?: mongoose.Types.ObjectId;
   orgId?: string;
   hasVoted: boolean;
   kycVerified: boolean;
@@ -24,7 +24,8 @@ const UserSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true },
   faceDescriptor: { type: [Number], default: undefined },
-  role: { type: String, enum: ['USER', 'ADMIN'], required: true },
+  role: { type: String, enum: ['USER', 'ADMIN', 'PARTY_LEADER', 'PARTY_MEMBER'], required: true },
+  partyId: { type: Schema.Types.ObjectId, ref: 'Party' },
   orgId: { type: String },
   hasVoted: { type: Boolean, default: false },
   kycVerified: { type: Boolean, default: false },
@@ -39,12 +40,5 @@ const UserSchema = new Schema<IUser>({
 
 // Add index on email
 UserSchema.index({ email: 1 }, { unique: true });
-
-// Enforce L2 Normalization before storing face descriptor
-UserSchema.pre('save', async function() {
-  if (this.isModified('faceDescriptor') && this.faceDescriptor && this.faceDescriptor.length > 0) {
-    this.faceDescriptor = normalizeDescriptor(this.faceDescriptor);
-  }
-});
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
