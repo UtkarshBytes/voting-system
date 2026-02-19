@@ -4,10 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, LogOut, Vote, User, ShieldCheck, Box, BarChart3, Clock, CheckCircle } from 'lucide-react';
+import { Loader2, LogOut, Vote, ShieldCheck, Box, Clock, CheckCircle, BarChart3, Lock, Fingerprint, User } from 'lucide-react';
 import { Election } from '@/lib/types';
 
 interface UserProfile {
@@ -148,17 +148,16 @@ export default function VoterDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
-  if (!user) return null; // Should redirect
+  if (!user) return null;
 
-  // Safety check for user role if API returns partial data
   if (!user.role) {
-      return <div className="flex items-center justify-center min-h-screen">Loading user profile...</div>;
+      return <div className="flex items-center justify-center min-h-screen bg-slate-50">Loading profile...</div>;
   }
 
   const activeElections = elections.filter(e => e.status === 'ACTIVE');
@@ -166,221 +165,307 @@ export default function VoterDashboard() {
   const remainingActive = activeElections.filter(e => e.id && !user.hasVoted?.[e.id]).length;
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/50">
+
       {/* 1. HEADER */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-6 h-16 flex items-center justify-between max-w-7xl mx-auto">
-            <div>
-                <div className="flex items-center gap-2 font-bold text-xl text-slate-900">
-                    <Vote className="w-6 h-6 text-primary" />
-                    <span>Voter Dashboard</span>
-                </div>
-                <p className="text-xs text-muted-foreground hidden sm:block">Blockchain-verified voting system</p>
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-20">
+        <div className="px-6 lg:px-8 h-20 flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex flex-col">
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <div className="p-1.5 bg-blue-600 rounded-lg shadow-sm">
+                        <Vote className="w-5 h-5 text-white" />
+                    </div>
+                    Voter Dashboard
+                </h1>
+                <p className="text-xs text-slate-500 font-medium ml-10 hidden sm:block">Blockchain-Verified Voting System</p>
             </div>
 
-            <div className="flex items-center gap-4">
-                <Badge variant="secondary" className="gap-1 bg-green-50 text-green-700 border-green-200 hidden md:flex">
-                    <CheckCircle className="w-3 h-3" /> Blockchain Verified
-                </Badge>
+            <div className="flex items-center gap-6">
+                <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-green-50 border border-green-200 rounded-full shadow-sm animate-in fade-in zoom-in">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                    <span className="text-xs font-bold text-green-700 tracking-wide uppercase">Blockchain Verified</span>
+                </div>
+
                 <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
-                <span className="text-sm font-medium text-slate-700 hidden sm:inline-block">
-                    {user.name}
-                </span>
-                <Button variant="ghost" onClick={handleLogout} className="text-slate-500 hover:text-red-600">
-                    <LogOut className="w-4 h-4" />
-                </Button>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="hidden sm:flex flex-col items-end">
+                            <span className="text-sm font-bold text-slate-700">{user.name}</span>
+                            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">{user.role}</span>
+                        </div>
+                        <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center shadow-inner">
+                            <User className="w-5 h-5 text-slate-500" />
+                        </div>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-full">
+                        <LogOut className="w-5 h-5" />
+                    </Button>
+                </div>
             </div>
         </div>
       </header>
 
-      <main className="p-6 max-w-7xl mx-auto space-y-8">
+      <main className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-        {/* 2. STATUS CARDS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* 2. STAT CARDS ROW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Active Elections */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Active Elections</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{activeElections.length}</div>
-                    <p className="text-xs text-muted-foreground">Currently open</p>
+            <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-white overflow-hidden group">
+                <CardContent className="p-6 relative">
+                    <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Vote className="w-24 h-24 text-blue-600" />
+                    </div>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-blue-50 rounded-xl">
+                            <Vote className="w-6 h-6 text-blue-600" />
+                        </div>
+                    </div>
+                    <div className="space-y-1 relative z-10">
+                        <h3 className="text-3xl font-bold text-slate-900">{activeElections.length}</h3>
+                        <p className="text-sm font-medium text-slate-500">Active Elections</p>
+                    </div>
                 </CardContent>
             </Card>
 
             {/* Voting Status */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Voting Status</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{votedCount}</div>
-                    <p className="text-xs text-muted-foreground">
-                        Elections voted in. {remainingActive} remaining.
-                    </p>
+            <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-white overflow-hidden group">
+                <CardContent className="p-6 relative">
+                    <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <CheckCircle className="w-24 h-24 text-green-600" />
+                    </div>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-green-50 rounded-xl">
+                            <CheckCircle className="w-6 h-6 text-green-600" />
+                        </div>
+                    </div>
+                    <div className="space-y-1 relative z-10">
+                        <h3 className="text-3xl font-bold text-slate-900">{votedCount}</h3>
+                        <p className="text-sm font-medium text-slate-500">Votes Cast ({remainingActive} pending)</p>
+                    </div>
                 </CardContent>
             </Card>
 
-            {/* KYC Status Snippet */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Identity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-2">
-                        <span className={`font-bold ${user.kyc?.status === 'VERIFIED' ? 'text-green-600' : 'text-yellow-600'}`}>
+            {/* Identity Status */}
+            <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-white overflow-hidden group">
+                <CardContent className="p-6 relative">
+                    <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <ShieldCheck className="w-24 h-24 text-indigo-600" />
+                    </div>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-indigo-50 rounded-xl">
+                            <ShieldCheck className="w-6 h-6 text-indigo-600" />
+                        </div>
+                    </div>
+                    <div className="space-y-1 relative z-10">
+                        <h3 className={`text-xl font-bold ${user.kyc?.status === 'VERIFIED' ? 'text-green-600' : 'text-yellow-600'}`}>
                             {user.kyc?.status === 'VERIFIED' ? 'Verified' : 'Pending'}
-                        </span>
-                        {user.kyc?.status === 'VERIFIED' && <ShieldCheck className="w-4 h-4 text-green-600" />}
+                        </h3>
+                        <p className="text-sm font-medium text-slate-500">Identity Status</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        {user.faceDescriptor ? 'Face ID Active' : 'Face ID Inactive'}
-                    </p>
                 </CardContent>
             </Card>
 
-            {/* Blockchain Status */}
-            <Card>
-                <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">Blockchain</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center gap-2">
-                        <Box className="w-4 h-4 text-primary" />
-                        <div className="text-2xl font-bold">{stats?.blockchainHeight || 0}</div>
+            {/* Blockchain Stats */}
+            <Card className="rounded-2xl shadow-sm border-slate-200 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-white overflow-hidden group">
+                <CardContent className="p-6 relative">
+                    <div className="absolute right-0 top-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <Box className="w-24 h-24 text-purple-600" />
                     </div>
-                    <p className="text-xs text-muted-foreground">Blocks mined</p>
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-purple-50 rounded-xl">
+                            <Box className="w-6 h-6 text-purple-600" />
+                        </div>
+                    </div>
+                    <div className="space-y-1 relative z-10">
+                        <h3 className="text-3xl font-bold text-slate-900">{stats?.blockchainHeight || 0}</h3>
+                        <p className="text-sm font-medium text-slate-500">Blocks Mined</p>
+                    </div>
                 </CardContent>
             </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 3. ACTIVE VOTES (Main Column) */}
-            <div className="lg:col-span-2 space-y-6">
-                <h2 className="text-xl font-bold text-slate-800">Active Elections</h2>
 
-                {activeElections.length === 0 ? (
-                    <div className="p-12 border-2 border-dashed rounded-xl text-center bg-white">
-                        <Vote className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <h3 className="text-lg font-medium text-slate-900">No active elections</h3>
-                        <p className="text-slate-500">Check back later for upcoming votes.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {activeElections.map((election) => {
-                            const hasVoted = election.id ? !!user.hasVoted?.[election.id] : false;
-                            return (
-                                <Card key={election.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                                    <div className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Active</Badge>
-                                                {hasVoted && <Badge variant="secondary" className="bg-green-100 text-green-700"><CheckCircle className="w-3 h-3 mr-1" /> Voted</Badge>}
+            {/* 3. ACTIVE ELECTIONS & RESULTS */}
+            <div className="lg:col-span-2 space-y-8">
+                <div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        Active Elections
+                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none">{activeElections.length}</Badge>
+                    </h2>
+
+                    {activeElections.length === 0 ? (
+                        <div className="p-12 border-2 border-dashed border-slate-200 rounded-3xl text-center bg-white/50">
+                            <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Vote className="w-8 h-8 text-slate-300" />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900">No active elections</h3>
+                            <p className="text-slate-500 max-w-sm mx-auto mt-2">There are currently no elections open for voting. Check back later.</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {activeElections.map((election) => {
+                                const hasVoted = election.id ? !!user.hasVoted?.[election.id] : false;
+                                return (
+                                    <div key={election.id} className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 hover:shadow-md transition-shadow relative overflow-hidden group">
+                                        <div className="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wide border border-green-200">
+                                                        Active
+                                                    </span>
+                                                    {hasVoted && (
+                                                        <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wide flex items-center gap-1">
+                                                            <CheckCircle className="w-3 h-3" /> Voted
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-slate-900">{election.title}</h3>
+                                                <div className="flex items-center gap-4 text-sm text-slate-500 font-medium">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Clock className="w-4 h-4 text-blue-500" />
+                                                        <span>{getTimeRemaining(election.endTime)}</span>
+                                                    </div>
+                                                    <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                                                    <span>Ends {new Date(election.startTime || Date.now()).toLocaleDateString()}</span>
+                                                </div>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-900">{election.title}</h3>
-                                            <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
-                                                <Clock className="w-4 h-4" />
-                                                <span>Ends: {new Date(election.startTime || Date.now()).toLocaleDateString()}</span>
-                                                <span>•</span>
-                                                <span>{getTimeRemaining(election.endTime)}</span>
-                                            </div>
+
+                                            <Link href={hasVoted ? `/results?id=${election.id}` : `/vote/${election.id}`}>
+                                                <Button
+                                                    size="lg"
+                                                    disabled={hasVoted}
+                                                    className={hasVoted
+                                                        ? "w-full sm:w-40 rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200"
+                                                        : "w-full sm:w-40 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+                                                    }
+                                                >
+                                                    {hasVoted ? "Already Voted" : "Vote Now"}
+                                                </Button>
+                                            </Link>
                                         </div>
-
-                                        <Link href={hasVoted ? `/results?id=${election.id}` : `/vote/${election.id}`}>
-                                            <Button disabled={hasVoted} className={hasVoted ? "w-full sm:w-auto" : "w-full sm:w-auto bg-primary hover:bg-primary/90"}>
-                                                {hasVoted ? "Already Voted" : "Vote Now"}
-                                            </Button>
-                                        </Link>
                                     </div>
-                                </Card>
-                            );
-                        })}
-                    </div>
-                )}
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
 
                 {/* Live Results Preview */}
                 {latestResult && latestResult.result.totalVotes > 0 && (
-                    <div className="mt-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-bold text-slate-800">Live Results Preview</h2>
+                    <div className="bg-white rounded-3xl p-8 shadow-lg border border-slate-100">
+                        <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                    <BarChart3 className="w-5 h-5 text-blue-600" /> Live Results
+                                </h2>
+                                <p className="text-sm text-slate-500 mt-1">Real-time data from the blockchain</p>
+                            </div>
                             <Link href={`/results?id=${latestResult.election.id}`}>
-                                <Button variant="link" className="text-primary">View Full Results &rarr;</Button>
+                                <Button variant="ghost" className="text-blue-600 hover:bg-blue-50 font-medium group">
+                                    View Full Analytics <span className="group-hover:translate-x-1 transition-transform ml-1">&rarr;</span>
+                                </Button>
                             </Link>
                         </div>
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-base">{latestResult.election.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {latestResult.election.candidates
-                                    .map((c: any) => ({
-                                        ...c,
-                                        votes: latestResult.result.results[c.id] || 0,
-                                        percent: latestResult.result.totalVotes > 0 ? ((latestResult.result.results[c.id] || 0) / latestResult.result.totalVotes) * 100 : 0
-                                    }))
-                                    .sort((a: any, b: any) => b.votes - a.votes)
-                                    .slice(0, 2)
-                                    .map((candidate: any) => (
-                                        <div key={candidate.id} className="space-y-1">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="font-medium text-slate-700">{candidate.name}</span>
-                                                <span className="text-slate-500">{candidate.percent.toFixed(1)}%</span>
-                                            </div>
-                                            <Progress value={candidate.percent} className="h-2" />
+
+                        <div className="space-y-6">
+                            <h3 className="text-base font-semibold text-slate-800 border-b border-slate-100 pb-2">
+                                {latestResult.election.title}
+                            </h3>
+                            {latestResult.election.candidates
+                                .map((c: any) => ({
+                                    ...c,
+                                    votes: latestResult.result.results[c.id] || 0,
+                                    percent: latestResult.result.totalVotes > 0 ? ((latestResult.result.results[c.id] || 0) / latestResult.result.totalVotes) * 100 : 0
+                                }))
+                                .sort((a: any, b: any) => b.votes - a.votes)
+                                .slice(0, 3)
+                                .map((candidate: any, idx) => (
+                                    <div key={candidate.id} className="space-y-2">
+                                        <div className="flex justify-between items-end">
+                                            <span className="font-bold text-slate-700 text-sm">
+                                                <span className="text-slate-400 mr-2 font-normal">#{idx + 1}</span>
+                                                {candidate.name}
+                                            </span>
+                                            <span className="font-mono font-bold text-blue-600">{candidate.percent.toFixed(1)}%</span>
                                         </div>
-                                    ))
-                                }
-                            </CardContent>
-                        </Card>
+                                        <Progress
+                                            value={candidate.percent}
+                                            className="h-2.5 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-blue-500 [&>div]:to-indigo-500"
+                                        />
+                                    </div>
+                                ))
+                            }
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* 4. SECURITY SIDEBAR */}
-            <div className="space-y-6">
-                <Card className="bg-slate-900 text-white border-none shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <ShieldCheck className="text-green-400" />
+            <div>
+                <Card className="bg-gradient-to-br from-slate-900 to-blue-950 text-white border-none shadow-2xl rounded-3xl sticky top-24 overflow-hidden">
+                    {/* Glow effect */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+                    <CardHeader className="pb-2 border-b border-white/10">
+                        <CardTitle className="flex items-center gap-3 text-lg">
+                            <ShieldCheck className="text-emerald-400 w-5 h-5" />
                             Security Center
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="space-y-2">
-                            <div className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Identity Status</div>
-                            <div className="flex items-center gap-3">
+                    <CardContent className="space-y-8 pt-6 relative z-10">
+
+                        {/* Identity Status */}
+                        <div className="space-y-3">
+                            <div className="text-xs text-slate-400 uppercase tracking-widest font-bold">Identity Verification</div>
+                            <div className="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
                                 {user.kyc?.status === 'VERIFIED' ? (
-                                    <div className="bg-green-500/20 p-2 rounded-full"><ShieldCheck className="w-6 h-6 text-green-400" /></div>
+                                    <div className="bg-emerald-500/20 p-2.5 rounded-full ring-1 ring-emerald-500/50"><ShieldCheck className="w-5 h-5 text-emerald-400" /></div>
                                 ) : (
-                                    <div className="bg-yellow-500/20 p-2 rounded-full"><ShieldCheck className="w-6 h-6 text-yellow-400" /></div>
+                                    <div className="bg-amber-500/20 p-2.5 rounded-full ring-1 ring-amber-500/50"><ShieldCheck className="w-5 h-5 text-amber-400" /></div>
                                 )}
                                 <div>
-                                    <div className="font-bold text-lg">
-                                        {user.kyc?.status === 'VERIFIED' ? "KYC Verified" :
-                                         user.kyc?.status === 'PENDING' ? "Pending Verification" : "Not Verified"}
+                                    <div className="font-bold text-base text-white">
+                                        {user.kyc?.status === 'VERIFIED' ? "Verified Voter" : "Verification Pending"}
                                     </div>
-                                    <div className="text-xs text-slate-400">
-                                        {user.kyc?.status === 'VERIFIED' ? "You are eligible for all elections." : "Please complete verification."}
+                                    <div className="text-xs text-slate-400 mt-0.5">
+                                        {user.kyc?.status === 'VERIFIED' ? "Level 3 Access Granted" : "Limited Access"}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <div className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Biometric Status</div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">{user.faceDescriptor ? "Face ID Configured" : "Not Configured"}</span>
-                                {user.faceDescriptor && <CheckCircle className="w-4 h-4 text-green-400" />}
+                        {/* Biometric Status */}
+                        <div className="space-y-3">
+                            <div className="text-xs text-slate-400 uppercase tracking-widest font-bold">Biometric Security</div>
+                            <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between group hover:bg-white/10 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <Fingerprint className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" />
+                                    <span className="text-sm font-medium text-slate-200">Face Recognition</span>
+                                </div>
+                                {user.faceDescriptor ? (
+                                    <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded text-xs font-bold">
+                                        <CheckCircle className="w-3 h-3" /> Enabled
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-slate-500 bg-slate-800 px-2 py-1 rounded">Disabled</span>
+                                )}
                             </div>
                         </div>
 
-                        <div className="bg-slate-800 p-3 rounded text-xs text-slate-300 leading-relaxed">
-                            Biometric verification enhances account security but is optional for voting.
+                        {/* Security Alert/Info */}
+                        <div className="bg-blue-500/10 p-4 rounded-xl border border-blue-500/20 flex gap-3">
+                            <Lock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-blue-100 leading-relaxed opacity-90">
+                                Your account is protected by 256-bit encryption. All votes are anonymously signed and immutable.
+                            </p>
                         </div>
 
-                        <Link href="/profile/security" className="block">
-                            <Button className="w-full bg-white text-slate-900 hover:bg-slate-100">
-                                Manage Profile
+                        <Link href="/profile/security" className="block pt-2">
+                            <Button className="w-full h-12 bg-white text-slate-900 hover:bg-slate-50 hover:scale-[1.02] transition-all font-bold rounded-xl shadow-lg">
+                                Manage Security Profile
                             </Button>
                         </Link>
                     </CardContent>
