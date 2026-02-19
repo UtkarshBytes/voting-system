@@ -167,7 +167,10 @@ export default function AdminRegisterPage() {
                               {passwordStrength > 75 ? "Strong" : passwordStrength > 50 ? "Medium" : "Weak"}
                           </span>
                       </div>
-                      <Progress value={passwordStrength} className="h-1.5" indicatorColor={passwordStrength > 75 ? "bg-green-500" : passwordStrength > 50 ? "bg-yellow-500" : "bg-red-500"} />
+                      <Progress
+                        value={passwordStrength}
+                        className={`h-1.5 ${passwordStrength > 75 ? "[&>div]:bg-green-500" : passwordStrength > 50 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-red-500"}`}
+                      />
                   </div>
               )}
             </div>
