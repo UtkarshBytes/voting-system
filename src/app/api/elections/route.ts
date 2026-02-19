@@ -5,6 +5,8 @@ import { getSession } from '@/lib/auth';
 import { blockchainService } from '@/lib/blockchain';
 import { Election } from '@/models/Election';
 import { User } from '@/models/User';
+import { Candidate } from '@/models/Candidate';
+import { Party } from '@/models/Party';
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,18 +65,8 @@ export async function POST(req: NextRequest) {
     const startDate = new Date(startTime);
     const endDate = endTime ? new Date(endTime) : undefined;
 
-    // Ensure candidates have IDs
-    const formattedCandidates = candidates.map((c: any) => {
-        // Simple random ID if missing, or use provided
-        return {
-            ...c,
-            id: c.id || Math.random().toString(36).substring(2, 15)
-        };
-    });
-
     const newElection = await Election.create({
       title,
-      candidates: formattedCandidates,
       status: 'ACTIVE',
       startTime: startDate.getTime(),
       endTime: endDate ? endDate.getTime() : undefined,
@@ -82,6 +74,50 @@ export async function POST(req: NextRequest) {
       endDate,
       createdBy: session.id
     });
+
+    // Create candidates in the Candidate collection
+    if (candidates && Array.isArray(candidates) && candidates.length > 0) {
+        for (const c of candidates) {
+            let partyId = c.partyId;
+
+            // Backward compatibility: If party is a string name, find or create the party
+            if (!partyId && c.party) {
+                let party = await Party.findOne({ name: c.party });
+                if (!party) {
+                    // Create a party if it doesn't exist to allow the election creation to proceed
+                    // This is a migration helper for the new architecture
+                    party = await Party.create({
+                        name: c.party,
+                        description: 'Auto-created during election setup',
+                        status: 'ACTIVE',
+                        createdByAdminId: session.id
+                    });
+                }
+                partyId = party._id;
+            }
+
+            // If we still don't have a partyId, create an "Independent" party
+            if (!partyId) {
+                 let independentParty = await Party.findOne({ name: 'Independent' });
+                 if (!independentParty) {
+                     independentParty = await Party.create({
+                         name: 'Independent',
+                         status: 'ACTIVE',
+                         createdByAdminId: session.id
+                     });
+                 }
+                 partyId = independentParty._id;
+            }
+
+            await Candidate.create({
+                name: c.name,
+                partyId: partyId,
+                electionId: newElection._id,
+                createdByPartyId: partyId, // Assume created by the party itself for now
+                imageUrl: c.imageUrl
+            });
+        }
+    }
 
     return NextResponse.json({
         ...newElection.toObject(),
