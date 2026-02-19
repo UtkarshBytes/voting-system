@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import { normalizeDescriptor } from '@/lib/auth';
 
 export interface IUser extends Document {
   name: string;
@@ -38,5 +39,12 @@ const UserSchema = new Schema<IUser>({
 
 // Add index on email
 UserSchema.index({ email: 1 }, { unique: true });
+
+// Enforce L2 Normalization before storing face descriptor
+UserSchema.pre('save', async function() {
+  if (this.isModified('faceDescriptor') && this.faceDescriptor && this.faceDescriptor.length > 0) {
+    this.faceDescriptor = normalizeDescriptor(this.faceDescriptor);
+  }
+});
 
 export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
