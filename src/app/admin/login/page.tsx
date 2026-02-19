@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                  <Label htmlFor="password" classname="text-sm font-semibold text-gray-700">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-semibold text-gray-700">Password</Label>
                   <Button variant="link" className="p-0 h-auto text-xs text-blue-600 font-medium" onClick={(e) => e.preventDefault()}>
                       Forgot Password?
                   </Button>

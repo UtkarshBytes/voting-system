@@ -146,7 +146,7 @@ export default function AdminRegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" classname="text-sm font-semibold text-gray-700">Password</Label>
+              <Label htmlFor="password" className="text-sm font-semibold text-gray-700">Password</Label>
               <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
@@ -173,7 +173,7 @@ export default function AdminRegisterPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" classname="text-sm font-semibold text-gray-700">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-semibold text-gray-700">Confirm Password</Label>
               <div className="relative">
                   <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <Input
