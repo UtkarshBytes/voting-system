@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { hashPassword, normalizeDescriptor } from '@/lib/auth';
+import { hashPassword } from '@/lib/auth';
 import { User } from '@/models/User';
 
 export async function POST(req: NextRequest) {
@@ -38,9 +38,6 @@ export async function POST(req: NextRequest) {
              descriptor = Array.from(faceDescriptor);
         }
 
-        if (descriptor) {
-            descriptor = normalizeDescriptor(descriptor);
-        }
     }
 
     const newUser = await User.create({

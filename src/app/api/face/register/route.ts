@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { getSession, normalizeDescriptor } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { User } from '@/models/User';
 
 export async function POST(req: NextRequest) {
@@ -28,8 +28,6 @@ export async function POST(req: NextRequest) {
     if (descriptor.length !== 128) {
         return NextResponse.json({ error: 'Invalid face descriptor format' }, { status: 400 });
     }
-
-    descriptor = normalizeDescriptor(descriptor);
 
     await dbConnect();
 
