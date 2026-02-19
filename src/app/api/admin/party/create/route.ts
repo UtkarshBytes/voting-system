@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { getSession } from '@/lib/auth';
+import { getSession, hashPassword } from '@/lib/auth';
 import { User } from '@/models/User';
 import { Party } from '@/models/Party';
 
@@ -36,7 +36,28 @@ export async function POST(req: NextRequest) {
         createdByAdminId: user._id
     });
 
-    return NextResponse.json({ message: 'Party created', party }, { status: 201 });
+    // Create Party Leader
+    const leaderEmail = `leader.${party._id.toString().substring(0, 6)}@${name.toLowerCase().replace(/\s+/g, '')}.com`;
+    const tempPassword = 'password123'; // In real app, generate random
+    const passwordHash = await hashPassword(tempPassword);
+
+    const leader = await User.create({
+        name: `${name} Leader`,
+        email: leaderEmail,
+        passwordHash,
+        role: 'PARTY_LEADER',
+        partyId: party._id,
+        kycVerified: true // Leaders assumed verified by Admin
+    });
+
+    return NextResponse.json({
+        message: 'Party and Leader created',
+        party,
+        leader: {
+            email: leaderEmail,
+            tempPassword
+        }
+    }, { status: 201 });
 
   } catch (error: any) {
     console.error('Create party error:', error);
