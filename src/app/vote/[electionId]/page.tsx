@@ -291,39 +291,78 @@ export default function VotePage() {
   // --- SELECTION VIEW ---
   if (step === 'select') {
     return (
-        <div className="min-h-screen bg-background p-6">
-          <div className="max-w-4xl mx-auto">
-            <Link href="/dashboard" className="flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+        <div className="min-h-screen bg-gray-50/50 p-6">
+          <div className="max-w-5xl mx-auto">
+            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary mb-8 transition-colors group">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
             </Link>
 
-            <div className="mb-8 space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">{election?.title}</h1>
-                <Badge variant={election?.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                    {election?.status}
-                </Badge>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-12">
+                <div className="space-y-2">
+                    <h1 className="text-4xl font-extrabold tracking-tight text-foreground lg:text-5xl">{election?.title}</h1>
+                    <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1 text-xs font-bold tracking-wider rounded-full ${election?.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                            {election?.status}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                            • {election?.candidates?.length || 0} Candidates
+                        </span>
+                    </div>
+                </div>
             </div>
 
-            <h2 className="text-xl font-semibold mb-6">Select a Candidate</h2>
-            {error && <div className="bg-red-500/10 text-red-500 p-4 rounded mb-4 flex items-center gap-2"><AlertTriangle className="w-4 h-4"/> {error}</div>}
+            <div className="mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Select a Candidate</h2>
+                <p className="text-muted-foreground">Review the candidates below and click select to proceed to verification.</p>
+            </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {error && <div className="bg-red-50 text-red-600 border border-red-100 p-4 rounded-xl mb-8 flex items-center gap-3 shadow-sm"><AlertTriangle className="w-5 h-5"/> {error}</div>}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {election?.candidates.map((candidate: any) => (
-                <Card
+                <div
                     key={candidate.id}
-                    className="hover:border-primary hover:shadow-md transition-all cursor-pointer group"
-                    onClick={() => onCandidateSelect(candidate.id)}
+                    className="relative flex flex-col bg-card rounded-[16px] border border-border/50 shadow-sm hover:shadow-xl hover:scale-[1.01] transition-all duration-300 overflow-hidden group"
                 >
-                  <CardHeader>
-                    <CardTitle className="group-hover:text-primary transition-colors">{candidate.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground italic font-medium">{candidate.party}</p>
-                  </CardContent>
-                  <CardFooter>
-                     <Button className="w-full" variant="secondary">Select</Button>
-                  </CardFooter>
-                </Card>
+                  <div className="p-6 flex flex-col flex-grow">
+                      <div className="flex items-start justify-between gap-4 mb-6">
+                          <div className="flex items-center gap-4">
+                              <div className="h-20 w-20 rounded-2xl bg-muted flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
+                                  {candidate.imageUrl ? (
+                                      <img src={candidate.imageUrl} alt={candidate.name} className="h-full w-full object-cover" />
+                                  ) : (
+                                      <div className="text-2xl font-bold text-muted-foreground/30">
+                                          {candidate.name.charAt(0)}
+                                      </div>
+                                  )}
+                              </div>
+                              <div>
+                                  <h3 className="text-2xl font-bold text-foreground leading-tight mb-1 group-hover:text-primary transition-colors">
+                                      {candidate.name}
+                                  </h3>
+                                  <p className="text-sm font-medium text-muted-foreground">
+                                      {candidate.party}
+                                  </p>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="mt-auto pt-4 border-t border-border/50">
+                          <div className="flex items-center justify-between mb-6">
+                              <span className="text-xs font-semibold text-primary uppercase tracking-wider bg-primary/5 px-2 py-1 rounded">
+                                  Running for Office
+                              </span>
+                          </div>
+
+                          <Button
+                              className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all text-base font-semibold"
+                              onClick={() => onCandidateSelect(candidate.id)}
+                          >
+                              Select Candidate
+                          </Button>
+                      </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
