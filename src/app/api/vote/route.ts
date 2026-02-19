@@ -48,7 +48,9 @@ export async function POST(req: NextRequest) {
 
                 const distance = euclideanDistance(normalizedStored, normalizedInput);
                 console.log(`Vote authorization face distance: ${distance}`);
-                const THRESHOLD = 0.40;
+
+                // Adjusted threshold for better matching performance (0.6 is standard for 128D descriptors)
+                const THRESHOLD = 0.60;
                 if (distance < THRESHOLD) {
                     authorized = true;
                 } else {

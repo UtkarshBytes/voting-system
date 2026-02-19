@@ -43,6 +43,12 @@ export async function getSession(req: NextRequest) {
 
 export function normalizeDescriptor(descriptor: number[]): number[] {
   const magnitude = Math.sqrt(descriptor.reduce((sum, val) => sum + val * val, 0));
+  console.log(`Face descriptor magnitude: ${magnitude}`);
+
+  if (Math.abs(magnitude - 1.0) < 0.01) {
+    return descriptor;
+  }
+
   if (magnitude === 0) return descriptor;
   return descriptor.map(val => val / magnitude);
 }
