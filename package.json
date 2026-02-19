@@ -19,6 +19,7 @@
     "mongodb-memory-server": "^11.0.1",
     "mongoose": "^9.2.1",
     "next": "14.1.0",
+    "node-mailjet": "^6.0.11",
     "qrcode.react": "^3.1.0",
     "radix-ui": "^1.0.1",
     "react": "^18.2.0",

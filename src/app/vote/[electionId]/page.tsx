@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle, ArrowLeft, ShieldCheck, AlertTriangle, KeyRound } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowLeft, ShieldCheck, AlertTriangle, KeyRound, Mail } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import FaceRecognition from '@/components/face-recognition';
 
@@ -28,7 +28,12 @@ export default function VotePage() {
   const [faceDescriptor, setFaceDescriptor] = useState<Float32Array | null>(null);
   const [password, setPassword] = useState('');
   const [usePassword, setUsePassword] = useState(false);
-  const [step, setStep] = useState<'select' | 'verify' | 'confirm'>('select');
+  const [step, setStep] = useState<'select' | 'verify' | 'confirm' | 'otp'>('select');
+
+  // OTP State
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     // Only fetch if we don't have a receipt yet
@@ -86,12 +91,10 @@ export default function VotePage() {
           setError("Password is required");
           return;
       }
-      // We don't verify password here, we just move to confirm step
-      // The verification happens at API level when voting
       setStep('confirm');
   };
 
-  const handleVote = async () => {
+  const handleRequestOtp = async () => {
     if (!selectedCandidate) return;
     if (!faceDescriptor && !password) return;
 
@@ -110,7 +113,7 @@ export default function VotePage() {
           body.password = password;
       }
 
-      const response = await fetch('/api/vote', {
+      const response = await fetch('/api/vote/request-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -120,26 +123,88 @@ export default function VotePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // If 401/403, it might be verification failure
         if (response.status === 401 || response.status === 403) {
              throw new Error(data.error || "Verification failed.");
         }
-        throw new Error(data.error || 'Vote failed');
+        throw new Error(data.error || 'Failed to request OTP');
       }
 
-      setVoteReceipt(data.receipt);
+      setMaskedEmail(data.email);
+      setStep('otp');
+      // Focus first OTP input
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
+
     } catch (err: any) {
       setError(err.message);
-      // If error, maybe go back to verify step?
       if (err.message.includes("Verification") || err.message.includes("Biometric") || err.message.includes("Password")) {
-          setStep('verify'); // Let them try again
+          setStep('verify');
           setFaceDescriptor(null);
-          // Keep password if they want to correct it? Or clear it?
-          // Don't clear password immediately so they can edit
       }
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleVerifyOtp = async () => {
+      const otpCode = otp.join('');
+      if (otpCode.length !== 6) {
+          setError("Please enter a valid 6-character OTP");
+          return;
+      }
+
+      setSubmitting(true);
+      setError(null);
+
+      try {
+          const response = await fetch('/api/vote/verify-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                  electionId,
+                  otp: otpCode
+              }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+              throw new Error(data.error || 'OTP verification failed');
+          }
+
+          setVoteReceipt(data.receipt);
+      } catch (err: any) {
+          setError(err.message);
+          // Don't clear OTP immediately, let user retry if attempts allow
+          if (err.message.includes("invalidated")) {
+              setStep('select'); // Restart flow? Or go back to dashboard?
+              router.push('/dashboard');
+          }
+      } finally {
+          setSubmitting(false);
+      }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+      if (value.length > 1) {
+          // Handle paste logic if needed, simplistically just take last char
+          value = value.slice(-1);
+      }
+
+      const newOtp = [...otp];
+      newOtp[index] = value.toUpperCase();
+      setOtp(newOtp);
+
+      // Auto-focus next
+      if (value && index < 5) {
+          inputRefs.current[index + 1]?.focus();
+      }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Backspace' && !otp[index] && index > 0) {
+          inputRefs.current[index - 1]?.focus();
+      }
   };
 
   const resetSelection = () => {
@@ -149,6 +214,7 @@ export default function VotePage() {
     setUsePassword(false);
     setStep('select');
     setError(null);
+    setOtp(['', '', '', '', '', '']);
   };
 
   if (isLoading) {
@@ -358,10 +424,73 @@ export default function VotePage() {
                          {error && <div className="bg-red-500/10 text-red-500 p-3 text-sm rounded flex gap-2 items-center"><AlertTriangle className="w-4 h-4" /> {error}</div>}
                     </CardContent>
                     <CardFooter>
-                         <Button className="w-full text-lg h-12" onClick={handleVote} disabled={submitting}>
+                         <Button className="w-full text-lg h-12" onClick={handleRequestOtp} disabled={submitting}>
                              {submitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
-                             {submitting ? 'Encrypting & Mining...' : 'Confirm & Vote'}
+                             {submitting ? 'Generating OTP...' : 'Proceed to Confirmation'}
                          </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+      );
+  }
+
+  // --- OTP VIEW ---
+  if (step === 'otp') {
+      const candidateName = election?.candidates.find((c: any) => c.id === selectedCandidate)?.name;
+
+      return (
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-md space-y-4">
+                 <Button variant="ghost" onClick={() => setStep('confirm')} className="self-start">
+                    <ArrowLeft className="w-4 h-4 mr-2" /> Back
+                </Button>
+
+                <Card className="border-primary/50 shadow-lg">
+                    <CardHeader>
+                        <CardTitle>Enter Verification Code</CardTitle>
+                        <CardDescription>
+                            We sent a 6-character code to <strong>{maskedEmail}</strong>.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="bg-secondary/50 p-4 rounded-lg text-center">
+                            <span className="text-xs text-muted-foreground uppercase">Voting For</span>
+                            <p className="text-xl font-bold">{candidateName}</p>
+                        </div>
+
+                        <div className="flex justify-center gap-2">
+                            {otp.map((digit, index) => (
+                                <Input
+                                    key={index}
+                                    ref={(el) => { inputRefs.current[index] = el; }}
+                                    type="text"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                                    onPaste={(e) => e.preventDefault()}
+                                    className="w-12 h-14 text-center text-2xl font-mono uppercase focus:ring-2 focus:ring-primary"
+                                    disabled={submitting}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                            <Mail className="w-4 h-4" /> Check your inbox (expires in 2m)
+                        </div>
+
+                        {error && <div className="bg-red-500/10 text-red-500 p-3 text-sm rounded flex gap-2 items-center justify-center"><AlertTriangle className="w-4 h-4" /> {error}</div>}
+                    </CardContent>
+                    <CardFooter>
+                        <Button
+                            className="w-full text-lg h-12"
+                            onClick={handleVerifyOtp}
+                            disabled={submitting || otp.some(d => !d)}
+                        >
+                            {submitting ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
+                            {submitting ? 'Verifying...' : 'Confirm Vote'}
+                        </Button>
                     </CardFooter>
                 </Card>
             </div>
