@@ -1,57 +1,44 @@
-import Mailjet from 'node-mailjet';
-
-// Initialize Mailjet client
-if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
-  console.warn("Mailjet API keys are missing. Email sending will fail.");
-}
-
-const mailjet = Mailjet.apiConnect(
-  process.env.MJ_APIKEY_PUBLIC || '',
-  process.env.MJ_APIKEY_PRIVATE || ''
-);
+import nodemailer from 'nodemailer';
 
 export async function sendOtpEmail(to: string, otp: string, electionName: string, candidateName: string) {
+  // 1. Check Env Vars
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_PASS) {
+    throw new Error("Gmail API credentials are not configured (GMAIL_USER, GMAIL_PASS).");
+  }
+
+  // 2. Create Transporter
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // true for 465, false for other ports
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
+    },
+  });
+
+  // 3. Send Mail
   try {
-    if (!process.env.MJ_APIKEY_PUBLIC || !process.env.MJ_APIKEY_PRIVATE) {
-        throw new Error("Mailjet API keys are not configured.");
-    }
+    const info = await transporter.sendMail({
+      from: `"Secure Voting System" <${process.env.GMAIL_USER}>`, // sender address
+      to: to, // list of receivers
+      subject: "Confirm Your Vote - " + electionName, // Subject line
+      text: `Your OTP is: ${otp}`, // plain text body
+      html: `
+        <h3>Confirm Your Vote</h3>
+        <p>You are about to cast a vote in <strong>${electionName}</strong>.</p>
+        <p>Selected Candidate: <strong>${candidateName}</strong></p>
+        <p>Your One-Time Password (OTP) is:</p>
+        <h2 style="background: #f0f0f0; padding: 10px; display: inline-block; letter-spacing: 5px;">${otp}</h2>
+        <p>This code expires in 2 minutes.</p>
+        <p>If you did not initiate this vote, please contact support immediately.</p>
+      `, // html body
+    });
 
-    const request = mailjet
-      .post("send", { 'version': 'v3.1' })
-      .request({
-        "Messages": [
-          {
-            "From": {
-              "Email": "finox96608@amiralty.com",
-              "Name": "Secure Voting System"
-            },
-            "To": [
-              {
-                "Email": to,
-                "Name": "Voter"
-              }
-            ],
-            "Subject": "Confirm Your Vote - " + electionName,
-            "TextPart": `Your OTP is: ${otp}`,
-            "HTMLPart": `
-              <h3>Confirm Your Vote</h3>
-              <p>You are about to cast a vote in <strong>${electionName}</strong>.</p>
-              <p>Selected Candidate: <strong>${candidateName}</strong></p>
-              <p>Your One-Time Password (OTP) is:</p>
-              <h2 style="background: #f0f0f0; padding: 10px; display: inline-block; letter-spacing: 5px;">${otp}</h2>
-              <p>This code expires in 2 minutes.</p>
-              <p>If you did not initiate this vote, please contact support immediately.</p>
-            `,
-            "CustomID": "VoteConfirmationOTP"
-          }
-        ]
-      });
-
-    const result = await request;
-    console.log(`Email sent to ${to}:`, JSON.stringify(result.body));
-    return result.body;
-  } catch (err: any) {
-    console.error('Mailjet Error:', err.statusCode, err.message);
-    throw new Error(`Failed to send email: ${err.message}`);
+    console.log("Message sent: %s", info.messageId);
+    return info;
+  } catch (error: any) {
+    console.error("Error sending email via Gmail:", error);
+    throw new Error(`Failed to send email: ${error.message}`);
   }
 }
