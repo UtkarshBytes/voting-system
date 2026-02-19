@@ -36,6 +36,11 @@ export default function Home() {
                 Register as Voter <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
+            <Link href="/verify">
+              <Button size="lg" variant="secondary" className="h-12 px-8 text-lg gap-2">
+                Verify Vote <ShieldCheck className="w-4 h-4" />
+              </Button>
+            </Link>
             <Link href="/admin/login">
               <Button size="lg" variant="outline" className="h-12 px-8 text-lg">
                 Admin Portal
