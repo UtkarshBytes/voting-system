@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import { Vote } from '@/models/Vote';
 import { Block } from '@/models/Block';
 import { Election } from '@/models/Election';
+import { Candidate } from '@/models/Candidate';
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest) {
     const election = await Election.findById(vote.electionId);
 
     // Get candidate info
-    const candidate = election?.candidates.find((c: any) => c.id === vote!.candidateId);
+    const candidate = await Candidate.findById(vote.candidateId).populate('partyId', 'name');
 
     return NextResponse.json({
       valid: true,
@@ -57,9 +58,9 @@ export async function GET(req: NextRequest) {
         title: election?.title,
       },
       candidate: {
-        id: candidate?.id,
+        id: candidate?._id.toString(),
         name: candidate?.name,
-        party: candidate?.party,
+        party: (candidate?.partyId as any)?.name || 'Independent',
       }
     }, { status: 200 });
 
