@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import { getSession, euclideanDistance, verifyPassword } from '@/lib/auth';
+import { getSession, euclideanDistance, verifyPassword, normalizeDescriptor } from '@/lib/auth';
 import { blockchainService } from '@/lib/blockchain';
 import { User } from '@/models/User';
 import { Election } from '@/models/Election';
@@ -42,7 +42,11 @@ export async function POST(req: NextRequest) {
 
         if (inputDescriptor.length === 128) {
             if (user.faceDescriptor && user.faceDescriptor.length === 128) {
-                const distance = euclideanDistance(user.faceDescriptor, inputDescriptor);
+                // Ensure both descriptors are normalized before comparison
+                const normalizedInput = normalizeDescriptor(inputDescriptor);
+                const normalizedStored = normalizeDescriptor(user.faceDescriptor);
+
+                const distance = euclideanDistance(normalizedStored, normalizedInput);
                 console.log(`Vote authorization face distance: ${distance}`);
                 const THRESHOLD = 0.40;
                 if (distance < THRESHOLD) {
