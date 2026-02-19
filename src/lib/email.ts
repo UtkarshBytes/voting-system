@@ -22,7 +22,7 @@ export async function sendOtpEmail(to: string, otp: string, electionName: string
         "Messages": [
           {
             "From": {
-              "Email": "noreply@secure-voting.com",
+              "Email": "finox96608@amiralty.com",
               "Name": "Secure Voting System"
             },
             "To": [
