@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,44 +10,23 @@ import Link from 'next/link';
 
 function VerifyContent() {
   const searchParams = useSearchParams();
-  const initialTxHash = searchParams.get('txHash');
-  const initialCode = searchParams.get('code');
+  const initialCode = searchParams.get('code') || searchParams.get('voteId');
 
-  const [input, setInput] = useState(initialTxHash || initialCode || '');
+  const [input, setInput] = useState(initialCode || '');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (initialTxHash) {
-      handleVerify(initialTxHash, 'hash');
-    } else if (initialCode) {
-      handleVerify(initialCode, 'code');
-    }
-  }, [initialTxHash, initialCode]);
-
-  const handleVerify = async (value: string, type?: 'hash' | 'code') => {
-    if (!value) return;
+  const handleVerify = async (voteId: string) => {
+    if (!voteId) return;
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
-      let query = '';
-      if (type) {
-         query = type === 'hash' ? `txHash=${value}` : `code=${value}`;
-      } else {
-         // Auto-detect
-         if (value.startsWith('VOTE-')) {
-            query = `code=${value}`;
-         } else {
-            query = `txHash=${value}`;
-         }
-      }
-
-      const res = await fetch(`/api/verify?${query}`, {
+      const res = await fetch(`/api/public/verify?voteId=${encodeURIComponent(voteId)}`, {
         method: 'GET',
-        credentials: 'include'
+        // credentials: 'omit' // No credentials needed for public endpoint
       });
       const data = await res.json();
 
@@ -55,9 +34,14 @@ function VerifyContent() {
         throw new Error(data.error || 'Verification failed');
       }
 
-      setResult(data);
+      if (!data.valid) {
+          setError('Invalid Vote ID');
+      } else {
+          setResult(data);
+      }
+
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -69,102 +53,84 @@ function VerifyContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center p-6 pt-24">
-      <div className="w-full max-w-2xl space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-extrabold tracking-tight">Verify Vote</h1>
-          <p className="text-muted-foreground text-lg">
-            Enter a Transaction Hash or Verification Code (VOTE-XXXX-XXXX) to verify on the blockchain.
-          </p>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-lg space-y-6">
+
+        <div className="text-center space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">Verify Your Vote</h1>
+            <p className="text-muted-foreground">
+                Enter your Vote ID to confirm it has been recorded on the blockchain.
+            </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex gap-4">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste Hash or VOTE-Code..."
-            className="flex-1 h-12 text-lg font-mono"
-          />
-          <Button type="submit" size="lg" disabled={loading} className="gap-2">
-            {loading ? <Loader2 className="animate-spin" /> : <Search />} Verify
-          </Button>
-        </form>
+        <Card className="shadow-lg border-t-4 border-t-primary">
+            <CardHeader>
+                <CardTitle>Vote ID Lookup</CardTitle>
+                <CardDescription>Enter the code from your voting receipt.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                  <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="e.g., VOTE-1234-ABCD"
+                    className="flex-1 font-mono uppercase"
+                  />
+                  <Button type="submit" disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    <span className="ml-2 hidden sm:inline">Verify</span>
+                  </Button>
+                </form>
+            </CardContent>
+        </Card>
 
         {error && (
-           <Card className="border-red-500/50 bg-red-500/10 animate-in fade-in slide-in-from-bottom-4">
-             <CardHeader className="flex flex-row items-center gap-4">
-               <XCircle className="w-8 h-8 text-red-500" />
+           <Card className="border-red-500/50 bg-red-50 animate-in fade-in slide-in-from-bottom-2">
+             <CardContent className="flex items-center gap-4 p-6">
+               <XCircle className="w-8 h-8 text-red-500 flex-shrink-0" />
                <div>
-                 <CardTitle className="text-red-700">Verification Failed</CardTitle>
-                 <CardDescription className="text-red-600/80">{error}</CardDescription>
+                 <h3 className="font-semibold text-red-900">Verification Failed</h3>
+                 <p className="text-red-700">{error}</p>
                </div>
-             </CardHeader>
+             </CardContent>
            </Card>
         )}
 
-        {result && (
-           <Card className="border-green-500/50 bg-green-500/5 overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-             <CardHeader className="flex flex-row items-center gap-4 bg-green-500/10 border-b border-green-500/20">
-               <CheckCircle className="w-8 h-8 text-green-600" />
+        {result && result.valid && (
+           <Card className="border-green-500/50 bg-white shadow-xl animate-in fade-in slide-in-from-bottom-2 overflow-hidden">
+             <div className="bg-green-50 p-6 flex items-center gap-4 border-b border-green-100">
+               <CheckCircle className="w-10 h-10 text-green-600 flex-shrink-0" />
                <div>
-                 <CardTitle className="text-green-800">Vote Verified Successfully</CardTitle>
-                 <CardDescription className="text-green-700/80">
-                    This transaction is confirmed on the blockchain.
-                 </CardDescription>
+                 <h3 className="text-xl font-bold text-green-800">Vote Recorded</h3>
+                 <p className="text-green-700">This vote is confirmed on the blockchain.</p>
                </div>
-             </CardHeader>
-             <CardContent className="space-y-6 pt-6">
+             </div>
 
-                {/* Verification Code Badge */}
-                {result.transaction.voteVerificationCode && (
-                    <div className="flex flex-col items-center justify-center p-4 bg-background border rounded-lg border-green-200">
-                        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-1">Verification Code</span>
-                        <span className="text-2xl font-mono font-bold text-green-700 tracking-wider">
-                            {result.transaction.voteVerificationCode}
-                        </span>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">Election</label>
-                        <p className="font-medium text-lg">{result.election?.title || 'Unknown Election'}</p>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-semibold uppercase text-muted-foreground">Candidate</label>
-                        <p className="font-medium text-lg">{result.candidate?.name || 'Unknown Candidate'}</p>
-                        <p className="text-sm text-muted-foreground">{result.candidate?.party}</p>
-                    </div>
+             <CardContent className="space-y-4 p-6">
+                <div className="grid gap-1">
+                    <label className="text-xs font-semibold uppercase text-muted-foreground">Election</label>
+                    <p className="font-medium text-lg text-foreground">{result.electionTitle}</p>
                 </div>
 
-                <div className="space-y-2 bg-muted/50 p-4 rounded-lg font-mono text-sm break-all border">
-                    <label className="text-xs font-semibold uppercase text-muted-foreground block mb-2">Blockchain Details</label>
-                    <div className="space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <span className="text-muted-foreground">Block Index:</span>
-                            <span className="font-bold">#{result.block.index}</span>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-muted-foreground">Transaction Hash:</span>
-                            <span className="text-xs">{result.transaction.id}</span>
-                        </div>
-                        <div className="flex flex-col gap-1">
-                            <span className="text-muted-foreground">Block Hash:</span>
-                            <span className="text-xs">{result.block.hash}</span>
-                        </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1 border-t pt-2 mt-2">
-                            <span className="text-muted-foreground">Timestamp:</span>
-                            <span>{new Date(result.transaction.timestamp).toLocaleString()}</span>
-                        </div>
+                <div className="grid gap-1">
+                    <label className="text-xs font-semibold uppercase text-muted-foreground">Timestamp</label>
+                    <p className="font-mono text-sm">{new Date(result.timestamp).toLocaleString()}</p>
+                </div>
+
+                <div className="bg-muted/50 p-4 rounded-lg font-mono text-xs break-all space-y-3 border">
+                    <div>
+                        <span className="block text-muted-foreground mb-1">Block Number</span>
+                        <span className="font-bold text-foreground">#{result.blockNumber}</span>
+                    </div>
+                    <div>
+                        <span className="block text-muted-foreground mb-1">Blockchain Hash</span>
+                        <span className="text-foreground">{result.blockchainHash}</span>
                     </div>
                 </div>
              </CardContent>
-             <CardFooter className="justify-center bg-green-500/10 border-t border-green-500/20 py-4 gap-4">
-                <Link href={`/results?id=${result.election?.id}`}>
-                    <Button variant="link" className="text-green-700 hover:text-green-800">
-                        View Election Results
-                    </Button>
-                </Link>
+
+             <CardFooter className="bg-gray-50 p-4 flex justify-center text-sm text-muted-foreground">
+                <p>Private vote details are not publicly accessible.</p>
              </CardFooter>
            </Card>
         )}
@@ -173,7 +139,6 @@ function VerifyContent() {
   );
 }
 
-// Wrap in Suspense for useSearchParams
 export default function VerifyPage() {
     return (
         <Suspense fallback={
