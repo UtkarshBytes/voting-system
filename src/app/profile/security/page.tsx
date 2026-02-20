@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldCheck, ShieldAlert, Shield, ArrowLeft, CheckCircle, Smartphone, UserCheck, AlertTriangle, ChevronRight, X, Info } from 'lucide-react';
 import { AuthService } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { VoterCard } from '@/components/voter-card';
 
 const FaceRecognition = dynamic(() => import('@/components/face-recognition'), { ssr: false });
 
@@ -160,6 +161,13 @@ export default function SecurityProfilePage() {
         )}
 
         <div className="grid gap-8">
+
+            {/* SECTION 0: DIGITAL VOTER ID (Verified Only) */}
+            {user.kyc.status === 'VERIFIED' && (
+                <div className="flex justify-center animate-in fade-in slide-in-from-top-8 duration-700">
+                    <VoterCard user={user} className="w-full max-w-lg transform hover:rotate-1 transition-transform duration-500" />
+                </div>
+            )}
 
             {/* SECTION 1: IDENTITY VERIFICATION (KYC) */}
             <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
