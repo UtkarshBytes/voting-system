@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import {
     Loader2, LogOut, Plus, Trash2, User, Users, FileText,
-    ShieldAlert, Activity, Box, Search, BarChart, Settings,
+    ShieldAlert, Activity, Box, Search, Settings,
     Bell, ChevronRight, LayoutDashboard, Flag, ShieldCheck,
     Menu, X, Server, Database
 } from 'lucide-react';
