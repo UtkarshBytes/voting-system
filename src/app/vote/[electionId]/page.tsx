@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle, ArrowLeft, ShieldCheck, AlertTriangle, KeyRound, Mail, RefreshCw, Copy, ExternalLink, Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import FaceRecognition from '@/components/face-recognition';
+import { cn } from '@/lib/utils';
 
 const StepProgress = ({ currentStep }: { currentStep: number }) => {
   const steps = [
@@ -250,22 +251,19 @@ export default function VotePage() {
   };
 
   const handleOtpChange = (index: number, value: string) => {
-      if (value.length > 1) {
-          // Handle paste logic if needed, simplistically just take last char
-          value = value.slice(-1);
-      }
-
+      const upper = value.toUpperCase().slice(-1); // Take only the last character entered
       const newOtp = [...otp];
-      newOtp[index] = value.toUpperCase();
+      newOtp[index] = upper;
       setOtp(newOtp);
 
-      // Auto-focus next
-      if (value && index < 5) {
+      // Auto-focus next input if value exists
+      if (upper && index < 5) {
           inputRefs.current[index + 1]?.focus();
       }
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+      // If Backspace and current field is empty, move focus to previous
       if (e.key === 'Backspace' && !otp[index] && index > 0) {
           inputRefs.current[index - 1]?.focus();
       }
@@ -647,12 +645,17 @@ export default function VotePage() {
                                     key={index}
                                     ref={(el) => { inputRefs.current[index] = el; }}
                                     type="text"
-                                    maxLength={1}
+                                    // maxLength removed to allow overwriting with "slicing" logic
                                     value={digit}
                                     onChange={(e) => handleOtpChange(index, e.target.value)}
                                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                                     onPaste={(e) => e.preventDefault()}
-                                    className="w-10 h-12 sm:w-14 sm:h-16 text-center text-2xl sm:text-3xl font-bold font-mono text-slate-800 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-sm"
+                                    className={cn(
+                                        "w-14 h-16 text-center text-3xl font-bold rounded-xl border-2 transition-all duration-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:scale-105",
+                                        digit
+                                            ? "border-blue-500 bg-blue-50 text-blue-900"
+                                            : "bg-white border-slate-200 text-slate-800"
+                                    )}
                                     disabled={submitting}
                                 />
                             ))}
